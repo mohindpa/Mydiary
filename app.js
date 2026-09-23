@@ -92,6 +92,12 @@ async function acceptOnSpace(event){
 }
 function chooseCandidate(index, appendSpace=false){ if(!candidate)return; const {node,start,end}=candidate, chosen=candidate.options[index]; node.data=node.data.slice(0,start)+chosen+(appendSpace?' ':'')+node.data.slice(end); const pos=start+chosen.length+(appendSpace?1:0), range=document.createRange(), selection=window.getSelection(); range.setStart(node,pos);range.collapse(true);selection.removeAllRanges();selection.addRange(range); $('#entryText').focus(); candidate=null; $('#candidatePopover').classList.add('hidden'); updateEntry(); }
 function setInputMode(mode){ const d=activeDiary(); d.settings.mode=mode; if(mode==='manglish'&&d.settings.font==='hand') d.settings.font='malayalamSerif'; applySettings(); save(); showToast(mode==='manglish' ? 'Manglish typing is on. Type a Malayalam sound, then choose its suggestion.' : 'English typing is on.'); }
+function setImmersive(on){
+  document.body.classList.toggle('immersive',on);
+  $('#immersiveToggle').setAttribute('aria-pressed',String(on));
+  if(on){ document.documentElement.requestFullscreen?.().catch(()=>{}); setTimeout(()=>$('#entryText').focus(),80); }
+  else if(document.fullscreenElement) document.exitFullscreen?.().catch(()=>{});
+}
 
 $('#newDiary').addEventListener('click',newDiary); $('#welcomeNew').addEventListener('click',newDiary); $('#returnShelf').addEventListener('click',showWelcome);
 $('#diaryShelf').addEventListener('click',e=>{const b=e.target.closest('.spine');if(b)openDiary(b.dataset.id);});
@@ -110,5 +116,6 @@ $('#previousPage').addEventListener('click',()=>changePage(activePage-1)); $('#n
 $('#addBookmark').addEventListener('click',()=>{const d=activeDiary(),id=d.pages[activePage].id,i=d.bookmarks.indexOf(id);if(i>=0){d.bookmarks.splice(i,1);showToast('Page mark removed.')}else{d.bookmarks.push(id);showToast('A brass mark now holds your place.')}save();renderPage();});
 $('#deleteDiary').addEventListener('click',moveToTrash); $('#openTrash').addEventListener('click',openTrash); $('#trashList').addEventListener('click',e=>{const id=e.target.dataset.restore||e.target.dataset.delete;if(!id)return;if(e.target.dataset.restore){const d=state.trash.find(d=>d.id===id);state.trash=state.trash.filter(d=>d.id!==id);state.diaries.unshift(d);save();renderTrash();renderShelf();showToast('Diary returned to the shelf.');}else{state.trash=state.trash.filter(d=>d.id!==id);save();renderTrash();renderShelf();showToast('Diary permanently removed.');}});
 $('#openSettings').addEventListener('click',()=>{applySettings();$('#settingsDialog').showModal();}); $('#inputMode').addEventListener('change',e=>setInputMode(e.target.value)); $('#quickInputMode').addEventListener('change',e=>setInputMode(e.target.value)); $('#fontChoice').addEventListener('change',e=>{activeDiary().settings.font=e.target.value;applySettings();save();}); $('#paperChoice').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;activeDiary().settings.paper=b.dataset.paper;applySettings();save();});
+$('#immersiveToggle').addEventListener('click',()=>setImmersive(true)); $('#immersiveExit').addEventListener('click',()=>setImmersive(false)); document.addEventListener('fullscreenchange',()=>{if(!document.fullscreenElement && document.body.classList.contains('immersive')) setImmersive(false);});
 $('#toggleTheme').addEventListener('click',()=>{state.night=!state.night;document.body.classList.toggle('night',state.night);save();}); document.body.classList.toggle('night',state.night);
 renderShelf();
