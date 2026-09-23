@@ -60,7 +60,7 @@ function offerCandidate(){
   candidate={node,start:end-source.length,end,options}; const pop=$('#candidatePopover'); pop.innerHTML=options.map((o,i)=>`<button data-candidate="${i}">${o}<small>${i+1}</small></button>`).join('');
   const range=document.createRange(); range.setStart(node,Math.max(0,end-source.length)); range.setEnd(node,end); const rect=range.getBoundingClientRect(); const box=$('#paperPage').getBoundingClientRect(); pop.style.left=`${Math.max(10,Math.min(420,rect.left-box.left))}px`; pop.style.top=`${Math.max(82,Math.min(396,rect.bottom-box.top+4))}px`; pop.classList.remove('hidden');
 }
-function chooseCandidate(index){ if(!candidate)return; const {node,start,end}=candidate, chosen=candidate.options[index]; node.data=node.data.slice(0,start)+chosen+node.data.slice(end); const pos=start+chosen.length, range=document.createRange(), selection=window.getSelection(); range.setStart(node,pos);range.collapse(true);selection.removeAllRanges();selection.addRange(range); $('#entryText').focus(); candidate=null; $('#candidatePopover').classList.add('hidden'); updateEntry(); }
+function chooseCandidate(index, appendSpace=false){ if(!candidate)return; const {node,start,end}=candidate, chosen=candidate.options[index]; node.data=node.data.slice(0,start)+chosen+(appendSpace?' ':'')+node.data.slice(end); const pos=start+chosen.length+(appendSpace?1:0), range=document.createRange(), selection=window.getSelection(); range.setStart(node,pos);range.collapse(true);selection.removeAllRanges();selection.addRange(range); $('#entryText').focus(); candidate=null; $('#candidatePopover').classList.add('hidden'); updateEntry(); }
 function setInputMode(mode){ const d=activeDiary(); d.settings.mode=mode; if(mode==='manglish'&&d.settings.font==='hand') d.settings.font='malayalamSerif'; applySettings(); save(); showToast(mode==='manglish' ? 'Manglish typing is on. Type a Malayalam sound, then choose its suggestion.' : 'English typing is on.'); }
 
 $('#newDiary').addEventListener('click',newDiary); $('#welcomeNew').addEventListener('click',newDiary); $('#returnShelf').addEventListener('click',showWelcome);
@@ -69,7 +69,7 @@ $('#coverChoice').addEventListener('click',e=>{const b=e.target.closest('button'
 $('#newDiaryForm').addEventListener('submit',e=>{if(e.submitter?.value==='cancel')return;e.preventDefault();$('#newDiaryDialog').close();createDiary();});
 $('#diaryTitle').addEventListener('input',e=>{activeDiary().title=e.target.value||'Untitled diary';save();renderShelf();});
 $('#entryText').addEventListener('input',()=>{updateEntry(); offerCandidate(); flowToNextPage();});
-$('#entryText').addEventListener('keydown',e=>{if(candidate && /^[1-3]$/.test(e.key)){e.preventDefault();chooseCandidate(+e.key-1);} else if(e.key==='Escape'){candidate=null;$('#candidatePopover').classList.add('hidden');}});
+$('#entryText').addEventListener('keydown',e=>{if(candidate && e.key===' '){e.preventDefault();chooseCandidate(0,true);} else if(candidate && /^[1-3]$/.test(e.key)){e.preventDefault();chooseCandidate(+e.key-1);} else if(e.key==='Escape'){candidate=null;$('#candidatePopover').classList.add('hidden');}});
 $('#candidatePopover').addEventListener('click',e=>{const b=e.target.closest('button');if(b)chooseCandidate(+b.dataset.candidate);});
 $('#fontSize').addEventListener('input',e=>{activeDiary().settings.size=+e.target.value; applySettings();save();});
 $('.writing-tools').addEventListener('mousedown',e=>{if(e.target.closest('button'))e.preventDefault();});
