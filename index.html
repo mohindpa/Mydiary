@@ -47,6 +47,21 @@
             <button id="addBookmark" class="bookmark-button"><span>◆</span> Mark this page</button>
           </div>
         </div>
+        <div class="editor-command-row">
+          <div class="input-mode-control">
+            <span class="control-kicker">Typing</span>
+            <select id="quickInputMode" aria-label="Typing language"><option value="english">English keyboard</option><option value="manglish">Manglish → മലയാളം</option></select>
+            <span id="quickModeHint">Choose Manglish to type Malayalam sounds in English letters.</span>
+          </div>
+          <div class="writing-tools" aria-label="Text formatting tools">
+            <label>Size <input id="fontSize" type="range" min="15" max="28" value="20" aria-label="Text size" /></label>
+            <button type="button" data-command="bold" title="Bold"><b>B</b></button>
+            <button type="button" data-command="italic" title="Italic"><i>I</i></button>
+            <button type="button" data-command="underline" title="Underline"><u>U</u></button>
+            <label class="ink-control" title="Text colour">Ink <input id="inkColor" type="color" value="#36344a" /></label>
+            <label class="highlight-control" title="Highlight selection">Highlight <input id="highlightColor" type="color" value="#f2cf70" /></label>
+          </div>
+        </div>
 
         <div class="book-stage">
           <div class="page-shadow"></div>
@@ -56,14 +71,6 @@
             <div class="paper-page" id="paperPage">
               <div class="page-topline"><span id="pageDate"></span><span id="pageNo">01</span></div>
               <div class="page-flourish">✣</div>
-              <div class="writing-tools" aria-label="Text formatting tools">
-                <label>Size <input id="fontSize" type="range" min="15" max="28" value="20" aria-label="Text size" /></label>
-                <button type="button" data-command="bold" title="Bold"><b>B</b></button>
-                <button type="button" data-command="italic" title="Italic"><i>I</i></button>
-                <button type="button" data-command="underline" title="Underline"><u>U</u></button>
-                <label class="ink-control" title="Text colour">Ink <input id="inkColor" type="color" value="#36344a" /></label>
-                <label class="highlight-control" title="Highlight selection">Highlight <input id="highlightColor" type="color" value="#f2cf70" /></label>
-              </div>
               <div id="entryText" class="entry-editor" contenteditable="true" role="textbox" aria-multiline="true" spellcheck="true" data-placeholder="Dear diary,"></div>
               <div class="composition-bar">
                 <span id="wordCount">0 words</span>
