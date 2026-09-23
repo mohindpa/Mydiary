@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>My Little Shelf</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;500;600;700&family=DM+Mono:wght@400;500&family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Noto+Sans+Malayalam:wght@400;500;600&family=Noto+Serif+Malayalam:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./style.css" />
+</head>
+<body>
+  <div class="grain"></div>
+  <main class="app-shell">
+    <aside class="shelf-panel">
+      <div class="brand"><span class="brand-star">✦</span><span>My little shelf</span></div>
+      <p class="shelf-caption">A quiet place for<br>the days you want to keep.</p>
+      <button class="new-diary" id="newDiary"><span>+</span> Begin a new diary</button>
+      <div class="shelf-rule"><span>YOUR VOLUMES</span></div>
+      <div class="diary-shelf" id="diaryShelf"></div>
+      <button class="trash-link" id="openTrash"><span>♲</span> Recently removed <b id="trashCount">0</b></button>
+    </aside>
+
+    <section class="writing-room">
+      <header class="room-header">
+        <button id="returnShelf" class="back-button" title="View shelf">← <span>All diaries</span></button>
+        <div class="save-status" id="saveStatus"><i></i> Saved in this browser</div>
+        <div class="header-actions">
+          <button class="icon-button" id="toggleTheme" title="Change page mood">☼</button>
+          <button class="icon-button" id="openSettings" title="Writing settings">⚙</button>
+        </div>
+      </header>
+
+      <section class="welcome-view" id="welcomeView">
+        <div class="welcome-ink">✦</div>
+        <p class="eyebrow">YOUR PRIVATE CORNER</p>
+        <h1>Which story will<br><em>you return to?</em></h1>
+        <p>Choose a volume from your shelf, or begin a clean one.<br>Your words stay right here, on your device.</p>
+        <button class="new-diary large" id="welcomeNew"><span>+</span> Begin a new diary</button>
+      </section>
+
+      <section class="diary-view hidden" id="diaryView">
+        <div class="diary-meta">
+          <div><p class="eyebrow">PERSONAL NOTES · <span id="diaryStarted"></span></p><input id="diaryTitle" aria-label="Diary title" value="Untitled diary" /></div>
+          <div class="meta-controls">
+            <button id="deleteDiary" class="quiet-danger">Move to bin</button>
+            <button id="addBookmark" class="bookmark-button"><span>◆</span> Mark this page</button>
+          </div>
+        </div>
+
+        <div class="book-stage">
+          <div class="page-shadow"></div>
+          <article class="paper-book" id="paperBook">
+            <div class="book-gutter"></div>
+            <div class="brass-bookmark hidden" id="bookmarkRibbon"><span>◆</span></div>
+            <div class="paper-page" id="paperPage">
+              <div class="page-topline"><span id="pageDate"></span><span id="pageNo">01</span></div>
+              <div class="page-flourish">✣</div>
+              <textarea id="entryText" spellcheck="true" placeholder="Dear diary,"></textarea>
+              <div class="composition-bar">
+                <span id="wordCount">0 words</span>
+                <span>—</span>
+                <span id="entryHint">Press Enter for a new line</span>
+              </div>
+              <div class="candidate-popover hidden" id="candidatePopover"></div>
+            </div>
+          </article>
+        </div>
+
+        <footer class="page-nav">
+          <button id="previousPage" class="page-button">← <span>Previous</span></button>
+          <div class="page-dots" id="pageDots"></div>
+          <button id="nextPage" class="page-button"><span>Next page</span> →</button>
+        </footer>
+      </section>
+    </section>
+  </main>
+
+  <dialog id="newDiaryDialog" class="dialog-card">
+    <form method="dialog" id="newDiaryForm">
+      <button class="close-dialog" value="cancel" aria-label="Close">×</button>
+      <p class="eyebrow">A FRESH VOLUME</p>
+      <h2>Give it a name.</h2>
+      <label for="newDiaryName">Diary title</label>
+      <input id="newDiaryName" maxlength="48" placeholder="e.g. September feelings" autofocus />
+      <label for="coverChoice">Choose a cover</label>
+      <div class="cover-options" id="coverChoice">
+        <button type="button" class="cover-swatch selected" data-cover="plum"><span></span> Mulberry</button>
+        <button type="button" class="cover-swatch" data-cover="forest"><span></span> Forest</button>
+        <button type="button" class="cover-swatch" data-cover="ochre"><span></span> Ochre</button>
+        <button type="button" class="cover-swatch" data-cover="midnight"><span></span> Midnight</button>
+      </div>
+      <button class="new-diary form-submit" value="default"><span>+</span> Place on shelf</button>
+    </form>
+  </dialog>
+
+  <dialog id="settingsDialog" class="dialog-card settings-card">
+    <form method="dialog">
+      <button class="close-dialog" value="cancel" aria-label="Close">×</button>
+      <p class="eyebrow">WRITING DESK</p>
+      <h2>Make the page yours.</h2>
+      <label for="inputMode">Typing language</label>
+      <select id="inputMode"><option value="english">English</option><option value="manglish">Manglish → Malayalam</option></select>
+      <p class="setting-note" id="modeExplainer">Write naturally in English.</p>
+      <label for="fontChoice">Page typeface</label>
+      <select id="fontChoice"><option value="hand">Handwritten English</option><option value="malayalamSerif">Malayalam Unicode · Serif</option><option value="malayalamSans">Malayalam Unicode · Sans</option></select>
+      <label for="paperChoice">Paper tone</label>
+      <div class="paper-options" id="paperChoice"><button type="button" data-paper="parchment" class="selected">Parchment</button><button type="button" data-paper="moon">Moonlit</button><button type="button" data-paper="rose">Blush paper</button></div>
+      <button class="new-diary form-submit" value="default">Keep these settings</button>
+    </form>
+  </dialog>
+
+  <dialog id="trashDialog" class="dialog-card trash-card">
+    <form method="dialog"><button class="close-dialog" value="cancel" aria-label="Close">×</button></form>
+    <p class="eyebrow">RECENTLY REMOVED</p><h2>The quiet corner.</h2>
+    <div id="trashList" class="trash-list"></div>
+  </dialog>
+  <div class="toast" id="toast"></div>
+  <script src="./app.js"></script>
+</body>
+</html>
