@@ -5,7 +5,7 @@ const shortDate = () => new Intl.DateTimeFormat('en', { month:'short', year:'num
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2,7);
 const defaultDiary = () => ({ id:uid(), title:'September feelings', cover:'plum', created:today(), pages:[{id:uid(), date:today(), html:'Dear diary,<br><br>Today I want to remember the little things.<br><br>'}], bookmarks:[], settings:{ mode:'english', font:'hand', paper:'parchment', size:20 } });
 let state = JSON.parse(localStorage.getItem(storeKey) || 'null') || { diaries:[defaultDiary()], trash:[], active:null, night:false };
-let activePage = 0, candidate = null, toastTimer;
+let activePage = 0, candidate = null, toastTimer, candidateTimer, candidateRequest = 0;
 function save(){ localStorage.setItem(storeKey, JSON.stringify(state)); $('#saveStatus').innerHTML='<i></i> Saved in this browser'; }
 function activeDiary(){ return state.diaries.find(d=>d.id===state.active); }
 function esc(s){ const d=document.createElement('div'); d.textContent=s; return d.innerHTML; }
@@ -17,7 +17,7 @@ function renderShelf(){
 }
 function showWelcome(){ state.active=null; save(); renderShelf(); $('#diaryView').classList.add('hidden'); $('#welcomeView').classList.remove('hidden'); }
 function openDiary(id){ state.active=id; activePage=0; save(); renderShelf(); $('#welcomeView').classList.add('hidden'); $('#diaryView').classList.remove('hidden'); applySettings(); renderPage(); }
-function applySettings(){ const d=activeDiary(); d.settings.size ??= 20; document.body.dataset.paper=d.settings.paper; document.body.dataset.font=d.settings.font; document.documentElement.style.setProperty('--entry-size',`${d.settings.size}px`); $('#fontSize').value=d.settings.size; $('#inputMode').value=d.settings.mode; $('#quickInputMode').value=d.settings.mode; $('#fontChoice').value=d.settings.font; $('#paperChoice').querySelectorAll('button').forEach(b=>b.classList.toggle('selected',b.dataset.paper===d.settings.paper)); const manglish=d.settings.mode==='manglish'; $('#modeExplainer').textContent=manglish ? 'Type Malayalam sounds in English letters. Choose the word you mean from the small suggestion card.' : 'Write naturally in English.'; $('#quickModeHint').textContent=manglish ? 'Type sounds in English; select a Malayalam suggestion or press 1–3.' : 'Choose Manglish to type Malayalam sounds in English letters.'; }
+function applySettings(){ const d=activeDiary(); d.settings.size ??= 20; document.body.dataset.paper=d.settings.paper; document.body.dataset.font=d.settings.font; document.documentElement.style.setProperty('--entry-size',`${d.settings.size}px`); $('#fontSize').value=d.settings.size; $('#inputMode').value=d.settings.mode; $('#quickInputMode').value=d.settings.mode; $('#fontChoice').value=d.settings.font; $('#paperChoice').querySelectorAll('button').forEach(b=>b.classList.toggle('selected',b.dataset.paper===d.settings.paper)); const manglish=d.settings.mode==='manglish'; $('#modeExplainer').textContent=manglish ? 'Type Malayalam sounds in English letters. Malayalam suggestions appear as you type; press Space to accept the first one.' : 'Write naturally in English.'; $('#quickModeHint').textContent=manglish ? 'Live Malayalam suggestions · Space accepts the first · 1–5 chooses an option' : 'Choose Manglish to type Malayalam sounds in English letters.'; }
 function renderPage(animate=false){
   const d=activeDiary(); if(!d) return; const p=d.pages[activePage];
   $('#diaryTitle').value=d.title; $('#diaryStarted').textContent=`BEGUN ${d.created.toUpperCase()}`; $('#pageDate').textContent=p.date; $('#pageNo').textContent=String(activePage+1).padStart(2,'0'); $('#entryText').innerHTML=pageHtml(p);
@@ -44,21 +44,51 @@ function flowToNextPage(){
   d.pages.splice(activePage+1,0,{id:uid(),date:today(),html:esc(rest).replace(/\n/g,'<br>')});
   save(); changePage(activePage+1); showToast('Your writing carried on to a fresh page.');
 }
-// A compact local transliterator for common Malayalam syllables. It keeps English text when it is not confident and offers choices before committing.
-const words={
-  'njan':['ഞാൻ'],'njān':['ഞാൻ'],'ente':['എന്റെ'],'enikku':['എനിക്ക്'],'sugham':['സുഖം'],'sukham':['സുഖം'],'malayalam':['മലയാളം'],'malayalam':['മലയാളം'],'malayali':['മലയാളി'],'nanni':['നന്ദി'],'namaskaram':['നമസ്കാരം'],'veedu':['വീട്'],'veettil':['വീട്ടിൽ'],'innu':['ഇന്ന്'],'innale':['ഇന്നലെ'],'naale':['നാളെ'],'ippo':['ഇപ്പോൾ'],'ishtam':['ഇഷ്ടം'],'santhosham':['സന്തോഷം'],'dukham':['ദുഃഖം'],'sneham':['സ്നേഹം'],'kudumbam':['കുടുംബം'],'amma':['അമ്മ'],'achan':['അച്ഛൻ'],'chechi':['ചേച്ചി'],'chettan':['ചേട്ടൻ'],'koottukaran':['കൂട്ടുകാരൻ'],'koottukari':['കൂട്ടുകാരി'],'mazha':['മഴ'],'vishamam':['വിഷമം'],'nalla':['നല്ല'],'valare':['വളരെ'],'oru':['ഒരു'],'ithu':['ഇത്'],'athu':['അത്'],'evide':['എവിടെ'],'engane':['എങ്ങനെ'],'und':['ഉണ്ട്'],'undu':['ഉണ്ട്'],'illa':['ഇല്ല'],'venam':['വേണം'],'poyi':['പോയി'],'varum':['വരും'],'varunnu':['വരുന്നു'],'ezhuthuka':['എഴുതുക'],'diary':['ഡയറി'],
-};
-const vowel={a:'അ',aa:'ആ',i:'ഇ',ii:'ഈ',u:'ഉ',uu:'ഊ',e:'എ',ee:'ഏ',ai:'ഐ',o:'ഒ',oo:'ഓ',au:'ഔ'};
-function roughMalayalam(raw){
-  const w=raw.toLowerCase(); if(words[w]) return words[w]; if(vowel[w])return [vowel[w]];
-  const consonants=[['ng','ങ'],['nj','ഞ'],['zh','ഴ'],['th','ത'],['dh','ധ'],['ph','ഫ'],['kh','ഖ'],['ch','ച'],['sh','ശ'],['tt','ട'],['nn','ണ'],['kk','ക'],['pp','പ'],['mm','മ'],['ll','ല'],['rr','ര'],['k','ക'],['g','ഗ'],['c','ച'],['j','ജ'],['t','ട'],['d','ദ'],['n','ന'],['p','പ'],['b','ബ'],['m','മ'],['y','യ'],['r','ര'],['l','ല'],['v','വ'],['s','സ'],['h','ഹ']];
-  let left=w, out='', matched=false; while(left){ let pair=consonants.find(([latin])=>left.startsWith(latin)); if(pair){ out+=pair[1]; left=left.slice(pair[0].length); const vow=['aa','ii','uu','ee','oo','ai','au','a','i','u','e','o'].find(v=>left.startsWith(v)); if(vow){ out+=({a:'',aa:'ാ',i:'ി',ii:'ീ',u:'ു',uu:'ൂ',e:'െ',ee:'േ',ai:'ൈ',o:'ൊ',oo:'ോ',au:'ൗ'})[vow]; left=left.slice(vow.length); } else if(left) out+='്'; matched=true; } else { return []; } } return matched?[out]:[];
+function wordAtCaret(){
+  const selection=window.getSelection();
+  if(!selection.rangeCount || selection.focusNode?.nodeType!==Node.TEXT_NODE) return null;
+  const node=selection.focusNode, end=selection.focusOffset, match=node.data.slice(0,end).match(/([A-Za-z.'-]+)$/);
+  if(!match || match[1].length<2) return null;
+  return {node,start:end-match[1].length,end,source:match[1]};
+}
+async function getMalayalamSuggestions(source){
+  const response=await fetch(`/api/transliterate?text=${encodeURIComponent(source)}`,{cache:'no-store'});
+  if(!response.ok) throw new Error('Suggestion service unavailable');
+  const data=await response.json();
+  return Array.isArray(data.result) ? [...new Set(data.result.filter(Boolean))].slice(0,5) : [];
+}
+function showCandidates(next){
+  candidate=next; const pop=$('#candidatePopover'); pop.innerHTML=next.options.map((o,i)=>`<button data-candidate="${i}">${o}<small>${i+1}</small></button>`).join('');
+  const range=document.createRange(); range.setStart(next.node,Math.max(0,next.start)); range.setEnd(next.node,next.end); const rect=range.getBoundingClientRect(); const box=$('#paperPage').getBoundingClientRect(); pop.style.left=`${Math.max(10,Math.min(420,rect.left-box.left))}px`; pop.style.top=`${Math.max(82,Math.min(396,rect.bottom-box.top+4))}px`; pop.classList.remove('hidden');
+}
+async function fetchAndShow(meta, requestId){
+  try {
+    const options=await getMalayalamSuggestions(meta.source);
+    if(requestId!==candidateRequest || meta.node.data.slice(meta.start,meta.end)!==meta.source || !options.length) return;
+    showCandidates({...meta,options});
+  } catch { if(requestId===candidateRequest) $('#candidatePopover').classList.add('hidden'); }
 }
 function offerCandidate(){
-  const d=activeDiary(); if(!d||d.settings.mode!=='manglish') return; const el=$('#entryText'), selection=window.getSelection(); if(!selection.rangeCount || selection.focusNode?.nodeType!==Node.TEXT_NODE){$('#candidatePopover').classList.add('hidden');return;} const node=selection.focusNode, end=selection.focusOffset, before=node.data.slice(0,end), match=before.match(/([A-Za-zā]+)$/); if(!match || match[1].length<2) { $('#candidatePopover').classList.add('hidden');return; }
-  const source=match[1], options=[...(words[source.toLowerCase()]||[]),...roughMalayalam(source)].filter((x,i,a)=>a.indexOf(x)===i).slice(0,3); if(!options.length){$('#candidatePopover').classList.add('hidden');return;}
-  candidate={node,start:end-source.length,end,options}; const pop=$('#candidatePopover'); pop.innerHTML=options.map((o,i)=>`<button data-candidate="${i}">${o}<small>${i+1}</small></button>`).join('');
-  const range=document.createRange(); range.setStart(node,Math.max(0,end-source.length)); range.setEnd(node,end); const rect=range.getBoundingClientRect(); const box=$('#paperPage').getBoundingClientRect(); pop.style.left=`${Math.max(10,Math.min(420,rect.left-box.left))}px`; pop.style.top=`${Math.max(82,Math.min(396,rect.bottom-box.top+4))}px`; pop.classList.remove('hidden');
+  const d=activeDiary(); clearTimeout(candidateTimer); candidate=null;
+  if(!d||d.settings.mode!=='manglish') { $('#candidatePopover').classList.add('hidden'); return; }
+  const meta=wordAtCaret(); if(!meta){$('#candidatePopover').classList.add('hidden');return;}
+  const requestId=++candidateRequest;
+  candidateTimer=setTimeout(()=>fetchAndShow(meta,requestId),120);
+}
+async function acceptOnSpace(event){
+  const d=activeDiary(); if(!d||d.settings.mode!=='manglish') return false;
+  const meta=wordAtCaret(); if(!meta) return false;
+  event.preventDefault();
+  if(candidate && candidate.node===meta.node && candidate.start===meta.start && candidate.end===meta.end){ chooseCandidate(0,true); return true; }
+  const requestId=++candidateRequest;
+  try {
+    const options=await getMalayalamSuggestions(meta.source);
+    if(requestId!==candidateRequest || meta.node.data.slice(meta.start,meta.end)!==meta.source) return true;
+    if(options.length){ showCandidates({...meta,options}); chooseCandidate(0,true); return true; }
+  } catch { showToast('Malayalam suggestions are temporarily unavailable.'); }
+  meta.node.data=meta.node.data.slice(0,meta.end)+' '+meta.node.data.slice(meta.end);
+  const range=document.createRange(), selection=window.getSelection(); range.setStart(meta.node,meta.end+1); range.collapse(true); selection.removeAllRanges(); selection.addRange(range); updateEntry();
+  return true;
 }
 function chooseCandidate(index, appendSpace=false){ if(!candidate)return; const {node,start,end}=candidate, chosen=candidate.options[index]; node.data=node.data.slice(0,start)+chosen+(appendSpace?' ':'')+node.data.slice(end); const pos=start+chosen.length+(appendSpace?1:0), range=document.createRange(), selection=window.getSelection(); range.setStart(node,pos);range.collapse(true);selection.removeAllRanges();selection.addRange(range); $('#entryText').focus(); candidate=null; $('#candidatePopover').classList.add('hidden'); updateEntry(); }
 function setInputMode(mode){ const d=activeDiary(); d.settings.mode=mode; if(mode==='manglish'&&d.settings.font==='hand') d.settings.font='malayalamSerif'; applySettings(); save(); showToast(mode==='manglish' ? 'Manglish typing is on. Type a Malayalam sound, then choose its suggestion.' : 'English typing is on.'); }
@@ -69,7 +99,7 @@ $('#coverChoice').addEventListener('click',e=>{const b=e.target.closest('button'
 $('#newDiaryForm').addEventListener('submit',e=>{if(e.submitter?.value==='cancel')return;e.preventDefault();$('#newDiaryDialog').close();createDiary();});
 $('#diaryTitle').addEventListener('input',e=>{activeDiary().title=e.target.value||'Untitled diary';save();renderShelf();});
 $('#entryText').addEventListener('input',()=>{updateEntry(); offerCandidate(); flowToNextPage();});
-$('#entryText').addEventListener('keydown',e=>{if(candidate && e.key===' '){e.preventDefault();chooseCandidate(0,true);} else if(candidate && /^[1-3]$/.test(e.key)){e.preventDefault();chooseCandidate(+e.key-1);} else if(e.key==='Escape'){candidate=null;$('#candidatePopover').classList.add('hidden');}});
+$('#entryText').addEventListener('keydown',async e=>{if(e.key===' ' && await acceptOnSpace(e)) return; if(candidate && /^[1-5]$/.test(e.key)){e.preventDefault();chooseCandidate(+e.key-1);} else if(e.key==='Escape'){candidate=null;$('#candidatePopover').classList.add('hidden');}});
 $('#candidatePopover').addEventListener('click',e=>{const b=e.target.closest('button');if(b)chooseCandidate(+b.dataset.candidate);});
 $('#fontSize').addEventListener('input',e=>{activeDiary().settings.size=+e.target.value; applySettings();save();});
 $('.writing-tools').addEventListener('mousedown',e=>{if(e.target.closest('button'))e.preventDefault();});
